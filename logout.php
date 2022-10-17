@@ -5,8 +5,12 @@
     $user_id = $_COOKIE['user_id'];
     $token = $_COOKIE['token'];
 
-    $session_delete_query = "DELETE FROM `session` WHERE user_id='$user_id' and token = '$token' LIMIT 1";
-    $result = mysqli_query($db, $session_delete_query);
+    mysqli_report(MYSQLI_REPORT_ERROR);
+    $stmt = $db->prepare("DELETE FROM `session` WHERE user_id=? and token =? LIMIT 1");
+    $stmt->bind_param("ss", $user_id, $token);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    print($result);
 
     setcookie (session_id(), "", time() - 3600);
     session_destroy();

@@ -8,9 +8,15 @@
     $user_id = $_COOKIE['user_id'];
     $token = $_COOKIE['token'];
 
-    $user_check_query = "SELECT * FROM session WHERE user_id='$user_id' and token='$token' LIMIT 1";
-    $result = mysqli_query($db, $user_check_query);
-    $session_info = mysqli_fetch_assoc($result);
+    mysqli_report(MYSQLI_REPORT_ERROR);
+    $stmt = $db->prepare("SELECT * FROM session WHERE user_id=? and token=? LIMIT 1");
+    $stmt->bind_param("ss", $user_id, $token);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $session_info = $result->fetch_assoc();
+    $stmt->close();
+
+    print($session_info);
 
     if(count($session_info)>0){
         if(time()>$session_info["expiry_time"]){
@@ -18,22 +24,34 @@
         }
         
         else{
-            $user_check_query = "SELECT balance FROM bank WHERE user_id='$user_id' LIMIT 1";
-            $result = mysqli_query($db, $user_check_query);
-            $balance = mysqli_fetch_assoc($result);
+            $stmt = $db->prepare("SELECT balance FROM bank WHERE user_id=? LIMIT 1");
+            $stmt->bind_param("s", $user_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $balance = $result->fetch_assoc();
             $balance = $balance["balance"];
+            $stmt->close();
+
             if ($action === "deposit") {
                 $balance = $balance + $amount;
-                $user_check_query = "UPDATE bank set balance='$balance' WHERE user_id='$user_id' LIMIT 1";
-                $result = mysqli_query($db, $user_check_query);
+
+                $stmt = $db->prepare("UPDATE bank set balance='$balance' WHERE user_id=? LIMIT 1");
+                $stmt->bind_param("s", $user_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $stmt->close();
+
                 print($balance);
             }
             elseif($action === "balance") {
                 print($balance);
             }
             elseif($action === "close"){
-                $user_check_query = "DELETE FROM bank WHERE user_id='$user_id' LIMIT 1";
-                $result = mysqli_query($db, $user_check_query);
+                $stmt = $db->prepare("DELETE FROM bank WHERE user_id=? LIMIT 1");
+                $stmt->bind_param("s", $user_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $stmt->close();
             }
             elseif($action === "withdraw"){
                 if($amount>$balance){
@@ -41,8 +59,13 @@
                 }
                 else{
                     $balance = $balance - $amount;
-                    $user_check_query = "UPDATE bank set balance='$balance' WHERE user_id='$user_id' LIMIT 1";
-                    $result = mysqli_query($db, $user_check_query);
+
+                    $stmt = $db->prepare("UPDATE bank set balance='$balance' WHERE user_id=? LIMIT 1");
+                    $stmt->bind_param("s", $user_id);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    $stmt->close();
+
                     print($balance);    
                 }
             }
